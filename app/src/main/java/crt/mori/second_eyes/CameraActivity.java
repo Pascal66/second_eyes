@@ -37,7 +37,7 @@ public class CameraActivity extends AppCompatActivity implements CvCameraViewLis
     private static final String TAG = "CameraActivity";
 
     private enum mTransformation { RIGID, FAST, CONTOURS };
-    private mTransformation mActiveTransformation = mTransformation.RIGID;
+    private mTransformation mActiveTransformation = mTransformation.CONTOURS; //.FAST; //.RIGID;
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private drawMap mSurfaceView;
@@ -87,7 +87,7 @@ public class CameraActivity extends AppCompatActivity implements CvCameraViewLis
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback);
         } else {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
@@ -229,7 +229,6 @@ public class CameraActivity extends AppCompatActivity implements CvCameraViewLis
 
         public drawMap(Context context) {
             super(context);
-
             Log.i(TAG, "Starting...");
             mHolder = getHolder();
             setWillNotDraw(false);

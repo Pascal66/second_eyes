@@ -13,9 +13,12 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
-import org.opencv.features2d.DescriptorExtractor;
+//import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.features2d.BRISK;
+import org.opencv.features2d.FastFeatureDetector;
+import org.opencv.features2d.Features2d;
 import org.opencv.features2d.DescriptorMatcher;
-import org.opencv.features2d.FeatureDetector;
+//import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractor;
@@ -25,8 +28,10 @@ import org.opencv.video.Video;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opencv.calib3d.Calib3d.estimateAffine2D;
+import static org.opencv.calib3d.Calib3d.estimateAffinePartial2D;
 import static org.opencv.calib3d.Calib3d.findHomography;
-import static org.opencv.video.Video.estimateRigidTransform;
+//import static org.opencv.video.Video.estimateRigidTransform;
 
 /**
  * Various methods of extracting path from images, matrices, etc. It is a simplified wrapper for the
@@ -38,8 +43,10 @@ public class ExtractPath {
 
     private static final String TAG="ExtractPath";
 
-    private FeatureDetector mFeatureDectector;
-    private DescriptorExtractor mDescExtractor;
+//    private FeatureDetector mFeatureDectector;
+private FastFeatureDetector mFeatureDectector;
+//    private DescriptorExtractor mDescExtractor;
+private BRISK mDescExtractor;
     private DescriptorMatcher mDescMatcher;
     private MatOfKeyPoint mKeyPointsPrev;
     private MatOfPoint2f prevPoints2f;
@@ -52,20 +59,21 @@ public class ExtractPath {
     private double mRefreshRate = 0.5;
     private BackgroundSubtractor mBackgroundSub;
 
-
     public ExtractPath() {
         super();
 
         mKeyPointsPrev = new MatOfKeyPoint();
         // set up feature detection
         try {
-            mFeatureDectector = FeatureDetector.create(FeatureDetector.FAST);
+//            mFeatureDectector = FeatureDetector.create(FeatureDetector.FAST);
+            mFeatureDectector = FastFeatureDetector.create();
         } catch (UnsatisfiedLinkError err) {
             Log.e(TAG, "Feature detector failed with");
             err.printStackTrace();
         }
         // set up description detection
-        mDescExtractor = DescriptorExtractor.create(DescriptorExtractor.BRISK);
+//        mDescExtractor = DescriptorExtractor.create(DescriptorExtractor.BRISK);
+        mDescExtractor = BRISK.create();
         mDescMatcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
 
         mPrevFrame = new Mat();
@@ -77,6 +85,10 @@ public class ExtractPath {
         mBackgroundSub = Video.createBackgroundSubtractorMOG2(50, 0, true);
     }
 
+    // cv::estimateAffine2D should be more robust to noise,
+    // but more computationally expensive than cv::estimateAffinePartial2D.
+    // They are similar to estimateRigidTransform with the fullAffine parameter set to true or false, respectively.
+
     /**
      * Extract object movement from current and previous frame using Rigid Transformation and save
      * it to path passed to function.
@@ -87,7 +99,8 @@ public class ExtractPath {
      * @return Current frame for displaying
      */
     public Path withRigidTransformation(Mat currFrame, Mat prevFrame, Path path) {
-        Mat movement = estimateRigidTransform(currFrame, prevFrame, false);
+//        Mat movement = estimateRigidTransform(currFrame, prevFrame, false);
+Mat movement = estimateAffinePartial2D(currFrame, prevFrame);
         if (!movement.empty()) {
             float fX = (float) (movement.get(0, 2)[0]);
             float fY = (float) (movement.get(1, 2)[0]);
@@ -125,7 +138,8 @@ public class ExtractPath {
         if (mPrevFrame != null) {
             // now lets get out rigidTransformation for orientation vector
            try {
-               Mat movement = estimateRigidTransform(mOutFrame, mPrevFrame, false);
+//               Mat movement = estimateRigidTransform(mOutFrame, mPrevFrame, false);
+               Mat movement = estimateAffinePartial2D(mOutFrame, mPrevFrame);
                 //Mat movement = findHomography(currPoints2f, prevPoints2f, Calib3d.LMEDS, 1.2f);
                if (!movement.empty()) {
                    fPointX = (float) (movement.get(0, 2)[0]);
